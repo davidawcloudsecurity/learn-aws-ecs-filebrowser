@@ -49,6 +49,7 @@ resource "aws_route_table_association" "public" {
 resource "aws_ecr_repository" "filebrowser" {
   name                 = "filebrowser"
   image_tag_mutability = "MUTABLE"
+  force_delete = true  # This will allow deletion even when the repository contains images
 }
 
 # Local-exec to clone, build, and push Filebrowser image
