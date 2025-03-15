@@ -65,59 +65,6 @@ resource "aws_ecr_repository" "filebrowser" {
   image_tag_mutability = "MUTABLE"
 }
 
-# Local-exec to build and push Filebrowser image with S3 config
-resource "null_resource" "push_filebrowser_image" {
-  depends_on = [aws_ecr_repository.filebrowser, aws_s3_bucket.filebrowser_storage]
-
-  provisioner "local-exec" {
-    command = <<EOT
-      # Clean up any previous build directory
-      sudo chown $(whoami) . /home
-      rm -rf /home/filebrowser-build || true
-      mkdir -p /home/filebrowser-build
-      cd /home/filebrowser-build
-
-      # Create Filebrowser config file for S3
-      cat << 'EOF' > filebrowser.json
-      {
-        "root": "",
-        "storage": {
-          "type": "s3",
-          "s3": {
-            "bucket": "${aws_s3_bucket.filebrowser_storage.bucket}",
-            "region": "us-east-1",
-            "endpoint": "s3.amazonaws.com",
-            "path": "files/"
-          }
-        }
-      }
-      EOF
-
-      # Create Dockerfile with S3 config
-      cat << 'EOF' > Dockerfile
-      FROM filebrowser/filebrowser:latest
-      COPY filebrowser.json /config/filebrowser.json
-      CMD ["/filebrowser", "--config", "/config/filebrowser.json"]
-      EOF
-
-      # Authenticate Docker to ECR
-      aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.filebrowser.repository_url}
-
-      # Build the Docker image
-      docker pull filebrowser/filebrowser:latest
-
-      # Tag the image for ECR
-      docker tag filebrowser-s3:latest ${aws_ecr_repository.filebrowser.repository_url}:latest
-
-      # Push the image to ECR
-      docker push ${aws_ecr_repository.filebrowser.repository_url}:latest
-
-      # Clean up
-      cd .. && rm -rf /home/filebrowser-build
-    EOT
-  }
-}
-
 # ECS Cluster
 resource "aws_ecs_cluster" "filebrowser_cluster" {
   name = "filebrowser-cluster"
@@ -244,6 +191,60 @@ resource "aws_ecs_service" "filebrowser_service" {
 
   depends_on = [aws_ecs_task_definition.filebrowser_task]
 }
+
+# Local-exec to build and push Filebrowser image with S3 config
+resource "null_resource" "push_filebrowser_image" {
+  depends_on = [aws_ecr_repository.filebrowser, aws_s3_bucket.filebrowser_storage]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      # Clean up any previous build directory
+      sudo chown $(whoami) . /home
+      rm -rf /home/filebrowser-build || true
+      mkdir -p /home/filebrowser-build
+      cd /home/filebrowser-build
+
+      # Create Filebrowser config file for S3
+      cat << 'EOF' > filebrowser.json
+      {
+        "root": "",
+        "storage": {
+          "type": "s3",
+          "s3": {
+            "bucket": "${aws_s3_bucket.filebrowser_storage.bucket}",
+            "region": "us-east-1",
+            "endpoint": "s3.amazonaws.com",
+            "path": "files/"
+          }
+        }
+      }
+      EOF
+
+      # Create Dockerfile with S3 config
+      cat << 'EOF' > Dockerfile
+      FROM filebrowser/filebrowser:latest
+      COPY filebrowser.json /config/filebrowser.json
+      CMD ["/filebrowser", "--config", "/config/filebrowser.json"]
+      EOF
+
+      # Authenticate Docker to ECR
+      aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.filebrowser.repository_url}
+
+      # Build the Docker image
+      docker pull filebrowser/filebrowser:latest
+
+      # Tag the image for ECR
+      docker tag filebrowser-s3:latest ${aws_ecr_repository.filebrowser.repository_url}:latest
+
+      # Push the image to ECR
+      docker push ${aws_ecr_repository.filebrowser.repository_url}:latest
+
+      # Clean up
+      cd .. && rm -rf /home/filebrowser-build
+    EOT
+  }
+}
+
 
 # Outputs
 output "ecr_repository_url" {
