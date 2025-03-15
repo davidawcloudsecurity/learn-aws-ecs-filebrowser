@@ -72,9 +72,10 @@ resource "null_resource" "push_filebrowser_image" {
   provisioner "local-exec" {
     command = <<EOT
       # Clean up any previous build directory
-      rm -rf /tmp/filebrowser-build || true
-      mkdir -p /tmp/filebrowser-build
-      cd /tmp/filebrowser-build
+      sudo chown ${whoami}. /home
+      rm -rf /home/filebrowser-build || true
+      mkdir -p /home/filebrowser-build
+      cd /home/filebrowser-build
 
       # Create Filebrowser config file for S3
       cat << 'EOF' > filebrowser.json
@@ -112,7 +113,7 @@ resource "null_resource" "push_filebrowser_image" {
       docker push ${aws_ecr_repository.filebrowser.repository_url}:latest
 
       # Clean up
-      cd .. && rm -rf /tmp/filebrowser-build
+      cd .. && rm -rf /home/filebrowser-build
     EOT
   }
 }
