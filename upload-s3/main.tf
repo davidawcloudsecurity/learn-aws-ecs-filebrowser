@@ -63,6 +63,7 @@ resource "random_string" "suffix" {
 resource "aws_ecr_repository" "filebrowser" {
   name                 = "filebrowser"
   image_tag_mutability = "MUTABLE"
+  force_delete = true  # This will allow deletion even when the repository contains images
 }
 
 # ECS Cluster
