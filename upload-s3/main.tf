@@ -229,7 +229,7 @@ EOF
       cat > Dockerfile << 'EOF'
 FROM filebrowser/filebrowser:latest
 COPY filebrowser.json /.filebrowser.json
-ENTRYPOINT [ "/filebrowser" ]
+ENTRYPOINT ["/filebrowser", "--address", "0.0.0.0"]
 EOF
       
       # Authenticate Docker to ECR
