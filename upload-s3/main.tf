@@ -212,16 +212,12 @@ resource "null_resource" "push_filebrowser_image" {
       # Create Filebrowser config file for S3
       cat > filebrowser.json << 'EOF'
 {
-  "root": "",
-  "storage": {
-    "type": "s3",
-    "s3": {
-      "bucket": "${aws_s3_bucket.filebrowser_storage.bucket}",
-      "region": "us-east-1",
-      "endpoint": "s3.amazonaws.com",
-      "path": "files/"
-    }
-  }
+  "port": 8080,
+  "baseURL": "",
+  "address": "",
+  "log": "stdout",
+  "name": "FB_STORAGE",
+  "value": "s3://${aws_s3_bucket.filebrowser_storage.bucket}"
 }
 EOF
       
