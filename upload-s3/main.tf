@@ -228,8 +228,8 @@ EOF
       # Create Dockerfile with S3 config
       cat > Dockerfile << 'EOF'
 FROM filebrowser/filebrowser:latest
-COPY filebrowser.json /config/filebrowser.json
-CMD ["filebrowser", "--config", "/config/filebrowser.json"]
+COPY filebrowser.json /.filebrowser.json
+CMD ["filebrowser"]
 EOF
       
       # Authenticate Docker to ECR
