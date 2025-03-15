@@ -71,7 +71,7 @@ resource "null_resource" "push_filebrowser_image" {
       docker pull filebrowser/filebrowser:latest
       
       # Tag the image for ECR
-      docker tag filebrowser:latest ${aws_ecr_repository.filebrowser.repository_url}:latest
+      docker tag filebrowser/filebrowser:latest ${aws_ecr_repository.filebrowser.repository_url}:latest
       
       # Push the image to ECR
       docker push ${aws_ecr_repository.filebrowser.repository_url}:latest
