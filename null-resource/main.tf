@@ -59,7 +59,7 @@ resource "null_resource" "push_filebrowser_image" {
   provisioner "local-exec" {
     command = <<EOT
       # Clean up any previous build directory
-      chown ${whoami}. /home
+      chown $(whoami). /home
       rm -rf /home/filebrowser-build || true
       mkdir -p /home/filebrowser-build
       cd /home/filebrowser-build
