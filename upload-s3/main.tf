@@ -108,7 +108,7 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
     }
   ])
 
-  depends_on = [null_resource.push_filebrowser_image]
+  # depends_on = [null_resource.push_filebrowser_image]
 }
 
 # IAM Role for ECS Task Execution
