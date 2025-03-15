@@ -200,7 +200,6 @@ resource "null_resource" "push_filebrowser_image" {
     aws_ecs_cluster.filebrowser_cluster,
     aws_ecs_task_definition.filebrowser_task
   ]
-
   provisioner "local-exec" {
     command = <<EOT
       # Clean up any previous build directory
@@ -208,30 +207,30 @@ resource "null_resource" "push_filebrowser_image" {
       rm -rf /home/filebrowser-build || true
       mkdir -p /home/filebrowser-build
       cd /home/filebrowser-build
-
+      
       # Create Filebrowser config file for S3
-      cat << 'EOF' > filebrowser.json
-      {
-        "root": "",
-        "storage": {
-          "type": "s3",
-          "s3": {
-            "bucket": "${aws_s3_bucket.filebrowser_storage.bucket}",
-            "region": "us-east-1",
-            "endpoint": "s3.amazonaws.com",
-            "path": "files/"
-          }
-        }
-      }
-      EOF
-
+      cat > filebrowser.json << 'EOF'
+{
+  "root": "",
+  "storage": {
+    "type": "s3",
+    "s3": {
+      "bucket": "${aws_s3_bucket.filebrowser_storage.bucket}",
+      "region": "us-east-1",
+      "endpoint": "s3.amazonaws.com",
+      "path": "files/"
+    }
+  }
+}
+EOF
+      
       # Create Dockerfile with S3 config
-      cat << 'EOF' > Dockerfile
-      FROM filebrowser/filebrowser:latest
-      COPY filebrowser.json /config/filebrowser.json
-      CMD ["/filebrowser", "--config", "/config/filebrowser.json"]
-      EOF
-
+      cat > Dockerfile << 'EOF'
+FROM filebrowser/filebrowser:latest
+COPY filebrowser.json /config/filebrowser.json
+CMD ["/filebrowser", "--config", "/config/filebrowser.json"]
+EOF
+      
       # Authenticate Docker to ECR
       while true; do
         aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.filebrowser.repository_url}
@@ -243,8 +242,8 @@ resource "null_resource" "push_filebrowser_image" {
           sleep 5
         fi
       done
-
-      # Build the Docker image
+      
+      # Pull the base image
       while true; do
         docker pull filebrowser/filebrowser:latest
         if [ $? -eq 0 ]; then
@@ -255,10 +254,22 @@ resource "null_resource" "push_filebrowser_image" {
           sleep 5
         fi
       done
-
+      
+      # Build the custom Docker image
+      while true; do
+        docker build -t filebrowser-s3:latest .
+        if [ $? -eq 0 ]; then
+          echo "Docker build successful"
+          break
+        else
+          echo "Docker build failed, retrying in 5 seconds..."
+          sleep 5
+        fi
+      done
+      
       # Tag the image for ECR
-      docker tag filebrowser/filebrowser:latest ${aws_ecr_repository.filebrowser.repository_url}:latest
-
+      docker tag filebrowser-s3:latest ${aws_ecr_repository.filebrowser.repository_url}:latest
+      
       # Push the image to ECR
       while true; do
         docker push ${aws_ecr_repository.filebrowser.repository_url}:latest
@@ -270,7 +281,7 @@ resource "null_resource" "push_filebrowser_image" {
           sleep 5
         fi
       done
-
+      
       # Clean up
       cd .. && rm -rf /home/filebrowser-build
     EOT
