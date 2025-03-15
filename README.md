@@ -33,3 +33,31 @@ alias k=kubectl; alias tf="terraform"; alias tfa="terraform apply --auto-approve
      docker tag filebrowser:latest <ecr_url>:latest
      docker push <ecr_url>:latest
      ```
+     To clean up Docker images and containers, you can use the following commands:
+
+1. To remove all stopped containers:
+```sh
+docker container prune
+```
+
+2. To remove all unused images:
+```sh
+docker image prune -a
+```
+
+3. To remove all unused volumes:
+```sh
+docker volume prune
+```
+
+4. To remove all unused networks:
+```sh
+docker network prune
+```
+
+If you want to remove everything (containers, images, volumes, and networks) that is not currently used, you can run:
+```sh
+docker system prune -a
+```
+
+Note: Using `docker system prune -a` will remove all unused images, containers, volumes, and networks. Be cautious when using this command, as it will delete a lot of data that might still be needed.
