@@ -194,7 +194,12 @@ resource "aws_ecs_service" "filebrowser_service" {
 
 # Local-exec to build and push Filebrowser image with S3 config
 resource "null_resource" "push_filebrowser_image" {
-  depends_on = [aws_ecr_repository.filebrowser, aws_s3_bucket.filebrowser_storage]
+  depends_on = [
+    aws_ecr_repository.filebrowser,
+    aws_s3_bucket.filebrowser_storage,
+    aws_ecs_cluster.filebrowser_cluster,
+    aws_ecs_task_definition.filebrowser_task
+  ]
 
   provisioner "local-exec" {
     command = <<EOT
@@ -228,16 +233,43 @@ resource "null_resource" "push_filebrowser_image" {
       EOF
 
       # Authenticate Docker to ECR
-      aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.filebrowser.repository_url}
+      while true; do
+        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.filebrowser.repository_url}
+        if [ $? -eq 0 ]; then
+          echo "Docker login successful"
+          break
+        else
+          echo "Docker login failed, retrying in 5 seconds..."
+          sleep 5
+        fi
+      done
 
       # Build the Docker image
-      docker pull filebrowser/filebrowser:latest
+      while true; do
+        docker pull filebrowser/filebrowser:latest
+        if [ $? -eq 0 ]; then
+          echo "Docker pull successful"
+          break
+        else
+          echo "Docker pull failed, retrying in 5 seconds..."
+          sleep 5
+        fi
+      done
 
       # Tag the image for ECR
       docker tag filebrowser/filebrowser:latest ${aws_ecr_repository.filebrowser.repository_url}:latest
 
       # Push the image to ECR
-      docker push ${aws_ecr_repository.filebrowser.repository_url}:latest
+      while true; do
+        docker push ${aws_ecr_repository.filebrowser.repository_url}:latest
+        if [ $? -eq 0 ]; then
+          echo "Docker push successful"
+          break
+        else
+          echo "Docker push failed, retrying in 5 seconds..."
+          sleep 5
+        fi
+      done
 
       # Clean up
       cd .. && rm -rf /home/filebrowser-build
