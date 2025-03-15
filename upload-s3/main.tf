@@ -84,6 +84,7 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256" # 0.25 vCPU
   memory                   = "512" # 512 MB
+  task_role_arn = aws_iam_role.ecs_execution_role.arn  # Add this line
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
 
   container_definitions = jsonencode([
@@ -97,6 +98,12 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
           hostPort      = 8080
         }
       ]
+      environment = [
+        {
+          name  = "FB_STORAGE",
+          value = "s3://:@us-east-1/${aws_s3_bucket.filebrowser_storage.bucket}"
+        }
+      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -105,7 +112,6 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
           "awslogs-stream-prefix" = "filebrowser"
         }
       }
-      # Command is now in the Dockerfile, no need to specify here
     }
   ])
 
@@ -147,7 +153,8 @@ resource "aws_iam_role_policy" "ecs_s3_access" {
           "s3:PutObject",
           "s3:GetObject",
           "s3:ListBucket",
-          "s3:DeleteObject"
+          "s3:DeleteObject",
+          "s3:PutObjectAcl"
         ]
         Resource = [
           "${aws_s3_bucket.filebrowser_storage.arn}",
@@ -163,8 +170,8 @@ resource "aws_security_group" "filebrowser_sg" {
   vpc_id = aws_vpc.main.id
   name   = "filebrowser-sg"
   ingress {
-    from_port   = 80
-    to_port     = 80
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"] # Public access (adjust for security if needed)
   }
