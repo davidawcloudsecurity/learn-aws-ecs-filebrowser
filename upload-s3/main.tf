@@ -93,7 +93,7 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
       essential = true
       portMappings = [
         {
-          containerPort = 80
+          containerPort = 8080
           hostPort      = 80
         }
       ]
