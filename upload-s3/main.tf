@@ -299,6 +299,69 @@ EOF
   }
 }
 
+resource "aws_launch_template" "ecs" {
+  name = "ecs-launch-template"
+
+  image_id      = "ami-0c55b159cbfafe1f0" # Amazon ECS-optimized AMI ID (update with the latest ECS-optimized AMI)
+  instance_type = "t3.micro"
+  
+  key_name = "your-key-pair" # Provide your key pair name
+
+  network_interfaces {
+    associate_public_ip_address = true
+    subnet_id                   = aws_subnet.public.id
+    security_groups             = [aws_security_group.filebrowser_sg.id]
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name = "ecs-instance"
+    }
+  }
+}
+
+resource "aws_autoscaling_group" "ecs" {
+  launch_template {
+    id      = aws_launch_template.ecs.id
+    version = "$Latest"
+  }
+
+  vpc_zone_identifier = [aws_subnet.public.id]
+
+  min_size         = 1
+  max_size         = 2
+  desired_capacity = 1
+
+  tags = [
+    {
+      key                 = "Name"
+      value               = "ecs-instance"
+      propagate_at_launch = true
+    }
+  ]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_autoscaling_attachment" "ecs" {
+  autoscaling_group_name = aws_autoscaling_group.ecs.name
+  alb_target_group_arn   = aws_lb_target_group.ecs_target_group.arn
+}
+
+resource "aws_ecs_cluster_capacity_providers" "filebrowser_cluster" {
+  cluster_name = aws_ecs_cluster.filebrowser_cluster.id
+
+  capacity_providers = ["FARGATE", "FARGATE_SPOT", "EC2"]
+
+  default_capacity_provider_strategy {
+    capacity_provider = "EC2"
+    weight            = 1
+  }
+}
+
 # Outputs
 output "ecr_repository_url" {
   value = aws_ecr_repository.filebrowser.repository_url
