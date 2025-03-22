@@ -1,4 +1,8 @@
 # learn-aws-ecs-filebrowser
+https://github.com/filebrowser/filebrowser/tree/master
+
+### Use s3 as a mnt for linux
+https://github.com/s3fs-fuse/s3fs-fuse
 
 ## https://developer.hashicorp.com/terraform/install
 Install if running at cloudshell
