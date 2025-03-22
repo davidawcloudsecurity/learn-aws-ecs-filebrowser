@@ -416,6 +416,7 @@ resource "aws_autoscaling_group" "ecs" {
   launch_template {
     id      = aws_launch_template.ecs.id
     version = "$Latest"
+    force_delete = true
   }
 
   vpc_zone_identifier = [aws_subnet.public.id]
