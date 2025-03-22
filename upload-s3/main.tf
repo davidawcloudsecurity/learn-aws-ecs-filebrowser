@@ -200,131 +200,61 @@ resource "aws_ecs_service" "filebrowser_service" {
   depends_on = [aws_ecs_task_definition.filebrowser_task]
 }
 
-# Local-exec to build and push Filebrowser image with S3 config
 resource "null_resource" "push_filebrowser_image" {
   depends_on = [
     aws_ecr_repository.filebrowser,
     aws_s3_bucket.filebrowser_storage,
-    aws_ecs_cluster.filebrowser_cluster,
-    aws_ecs_task_definition.filebrowser_task
+    aws_ecs_cluster.filebrowser_cluster
   ]
   provisioner "local-exec" {
     command = <<EOT
-      # Clean up any previous build directory
-      sudo chown $(whoami) . /home
-      rm -rf /home/filebrowser-build || true
-      mkdir -p /home/filebrowser-build
-      cd /home/filebrowser-build
+      # Clean up and use /tmp
+      rm -rf /tmp/filebrowser-build || true
+      mkdir -p /tmp/filebrowser-build
+      cd /tmp/filebrowser-build
       
-      # Create Dockerfile with S3 config
+      # Create Dockerfile
       cat > Dockerfile << 'EOF'
 FROM filebrowser/filebrowser:latest
 
 USER root
 
-# Install required packages for S3 support
-RUN apk add --no-cache \
-    s3fs-fuse \
-    fuse \
-    ca-certificates \
-    bash
-
-# Create the mount directory
+RUN apk add --no-cache s3fs-fuse fuse ca-certificates bash
 RUN mkdir -p /srv/s3bucket
+ENV S3_BUCKET=\${aws_s3_bucket.filebrowser_storage.bucket}
 
-# Set S3 bucket name
-ENV S3_BUCKET=${aws_s3_bucket.filebrowser_storage.bucket}
+RUN echo '#!/bin/bash' > /entrypoint.sh && \
+    echo 'set -e' >> /entrypoint.sh && \
+    echo 'echo "Mounting S3 bucket: \$S3_BUCKET"' >> /entrypoint.sh && \
+    echo 'S3_OPTIONS="\${S3_OPTIONS:-""}"' >> /entrypoint.sh && \
+    echo 's3fs "\$S3_BUCKET" /srv/s3bucket -o iam_role=auto -o allow_other -o umask=0022 -o dbglevel=info \$S3_OPTIONS' >> /entrypoint.sh && \
+    echo 'echo "S3 bucket mounted at /srv/s3bucket using IAM role"' >> /entrypoint.sh && \
+    echo 'export FB_ROOT=/srv/s3bucket' >> /entrypoint.sh && \
+    echo 'exec /filebrowser' >> /entrypoint.sh
 
-# Create entrypoint script
-RUN cat > /entrypoint.sh << 'SCRIPT'
-#!/bin/bash
-set -e
-
-# Mount S3 bucket directly without condition
-echo "Mounting S3 bucket: $S3_BUCKET"
-
-S3_OPTIONS="$${S3_OPTIONS:-""}"
-
-# Mount the S3 bucket using IAM role from the task
-s3fs "$S3_BUCKET" /srv/s3bucket \
-    -o iam_role=auto \
-    -o allow_other \
-    -o umask=0022 \
-    -o dbglevel=info \
-    $S3_OPTIONS
-    
-echo "S3 bucket mounted at /srv/s3bucket using IAM role"
-
-# Set S3 bucket as root for filebrowser
-export FB_ROOT=/srv/s3bucket
-
-# Run the original filebrowser executable
-exec /filebrowser
-SCRIPT
-
-# Make the entrypoint script executable
 RUN chmod +x /entrypoint.sh
-
-# Set the entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
 EOF
       
       # Authenticate Docker to ECR
       while true; do
-        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.filebrowser.repository_url}
-        if [ $? -eq 0]; then
-          echo "Docker login successful"
-          break
-        else
-          echo "Docker login failed, retrying in 5 seconds..."
-          sleep 5
-        fi
+        aws ecr get-login-password --region ${data.aws_region.current.name} | docker login --username AWS --password-stdin ${aws_ecr_repository.filebrowser.repository_url}
+        if [ $? -eq 0 ]; then break; else echo "Retrying login..."; sleep 5; fi
       done
       
-      # Pull the base image
-      while true; do
-        docker pull filebrowser/filebrowser:latest
-        if [ $? -eq 0 ]; then
-          echo "Docker pull successful"
-          break
-        else
-          echo "Docker pull failed, retrying in 5 seconds..."
-          sleep 5
-        fi
-      done
-      
-      # Build the custom Docker image
-      while true; do
-        docker build -t filebrowser-s3:latest .
-        if [ $? -eq 0 ]; then
-          echo "Docker build successful"
-          break
-        else
-          echo "Docker build failed, retrying in 5 seconds..."
-          sleep 5
-        fi
-      done
-      
-      # Tag the image for ECR
+      # Pull, build, tag, push
+      docker pull filebrowser/filebrowser:latest || true
+      docker build -t filebrowser-s3:latest .
       docker tag filebrowser-s3:latest ${aws_ecr_repository.filebrowser.repository_url}:latest
-      
-      # Push the image to ECR
-      while true; do
-        docker push ${aws_ecr_repository.filebrowser.repository_url}:latest
-        if [ $? -eq 0 ]; then
-          echo "Docker push successful"
-          break
-        else
-          echo "Docker push failed, retrying in 5 seconds..."
-          sleep 5
-        fi
-      done
+      docker push ${aws_ecr_repository.filebrowser.repository_url}:latest
       
       # Clean up
-      cd .. && rm -rf /home/filebrowser-build
+      cd .. && rm -rf /tmp/filebrowser-build
     EOT
   }
 }
+
+data "aws_region" "current" {}
 
 # Outputs
 output "ecr_repository_url" {
