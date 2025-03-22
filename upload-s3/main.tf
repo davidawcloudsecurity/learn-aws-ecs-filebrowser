@@ -122,6 +122,43 @@ resource "aws_iam_role_policy_attachment" "ssm_policy_attachment" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+resource "aws_iam_policy" "ecs_container_instance_policy" {
+  name        = "ECSContainerInstancePolicy"
+  description = "Permissions for ECS container instance registration and management"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "ecs:RegisterContainerInstance",
+          "ecs:DeregisterContainerInstance",
+          "ecs:DiscoverPollEndpoint",
+          "ecs:Poll",
+          "ecs:StartTelemetrySession",
+          "ecs:UpdateContainerInstancesState",
+          "ecs:SubmitAttachmentStateChange",
+          "ecs:SubmitContainerStateChange",
+          "ecs:SubmitTaskStateChange",
+          # Optional: Include "ecs:CreateCluster" only if needed
+          # "ecs:CreateCluster"
+        ],
+        Resource = [
+          "*",  # Broad permissions (adjust if needed)
+          # For stricter scoping, use:
+          # "${aws_ecs_cluster.filebrowser_cluster.arn}"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_container_instance_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.ecs_container_instance_policy.arn
+}
+
 # Add to aws_iam_role_policy_attachment:
 resource "aws_iam_role_policy_attachment" "ecs_ec2_role" {
   role       = aws_iam_role.ec2_role.name
