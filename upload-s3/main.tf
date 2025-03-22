@@ -380,11 +380,11 @@ resource "aws_launch_template" "ecs" {
 
   image_id      = "ami-0c55b159cbfafe1f0" # Amazon ECS-optimized AMI ID (update with the latest ECS-optimized AMI)
   instance_type = "t3.micro"
-  
+  /*
   iam_instance_profile {
     name = aws_iam_instance_profile.ec2_instance_profile.name
   }
-
+*/
   network_interfaces {
     associate_public_ip_address = true
     subnet_id                   = aws_subnet.public.id
