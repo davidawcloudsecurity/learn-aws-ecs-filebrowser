@@ -119,13 +119,13 @@ resource "aws_iam_role_policy_attachment" "ssm_policy_attachment" {
   role       = aws_iam_role.ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
-/*
+
 # Create instance profile
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
   name = "ec2_instance_profile"
   role = aws_iam_role.ec2_role.name
 }
-*/
+
 # ECS Cluster
 resource "aws_ecs_cluster" "filebrowser_cluster" {
   name = "filebrowser-cluster"
@@ -250,18 +250,22 @@ resource "aws_security_group" "filebrowser_sg" {
   }
 }
 
-# ECS Service with Fargate
+# Update the ECS service to use the capacity provider
 resource "aws_ecs_service" "filebrowser_service" {
   name            = "filebrowser-service"
   cluster         = aws_ecs_cluster.filebrowser_cluster.id
   task_definition = aws_ecs_task_definition.filebrowser_task.arn
   desired_count   = 1
-  launch_type     = "EC2"
+  
+  # Remove launch_type = "EC2" and use capacity_provider_strategy instead
+  capacity_provider_strategy {
+    capacity_provider = aws_ecs_capacity_provider.ec2_capacity_provider.name
+    weight            = 1
+  }
 
   network_configuration {
     subnets          = [aws_subnet.public.id]
     security_groups  = [aws_security_group.filebrowser_sg.id]
-    # assign_public_ip = true
   }
 
   depends_on = [aws_ecs_task_definition.filebrowser_task]
@@ -380,16 +384,23 @@ resource "aws_launch_template" "ecs" {
 
   image_id      = "ami-084568db4383264d4"
   instance_type = "t3.micro"
-  /*
+  
   iam_instance_profile {
     name = aws_iam_instance_profile.ec2_instance_profile.name
   }
-*/
+
   network_interfaces {
     associate_public_ip_address = true
     subnet_id                   = aws_subnet.public.id
     security_groups             = [aws_security_group.filebrowser_sg.id]
   }
+
+  # Add ECS configuration
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    echo ECS_CLUSTER=${aws_ecs_cluster.filebrowser_cluster.name} >> /etc/ecs/ecs.config
+    EOF
+  )
 
   tag_specifications {
     resource_type = "instance"
@@ -398,7 +409,7 @@ resource "aws_launch_template" "ecs" {
     }
   }
 }
-/*
+
 resource "aws_autoscaling_group" "ecs" {
   launch_template {
     id      = aws_launch_template.ecs.id
@@ -416,6 +427,11 @@ resource "aws_autoscaling_group" "ecs" {
       key                 = "Name"
       value               = "ecs-instance"
       propagate_at_launch = true
+    },
+    {
+      key                 = "AmazonECSManaged"
+      value               = ""
+      propagate_at_launch = true
     }
   ]
 
@@ -429,17 +445,33 @@ resource "aws_autoscaling_attachment" "ecs" {
   lb_target_group_arn   = aws_lb_target_group.ecs_target_group.arn
 }
 
+# Set up capacity providers for the ECS cluster
+resource "aws_ecs_capacity_provider" "ec2_capacity_provider" {
+  name = "ec2-capacity-provider"
+
+  auto_scaling_group_provider {
+    auto_scaling_group_arn = aws_autoscaling_group.ecs.arn
+    
+    managed_scaling {
+      maximum_scaling_step_size = 1
+      minimum_scaling_step_size = 1
+      status                    = "ENABLED"
+      target_capacity           = 100
+    }
+  }
+}
+
 resource "aws_ecs_cluster_capacity_providers" "filebrowser_cluster" {
   cluster_name = aws_ecs_cluster.filebrowser_cluster.name
 
-  capacity_providers = ["FARGATE", "FARGATE_SPOT", "EC2"]
+  capacity_providers = [aws_ecs_capacity_provider.ec2_capacity_provider.name]
 
   default_capacity_provider_strategy {
-    capacity_provider = "EC2"
+    capacity_provider = aws_ecs_capacity_provider.ec2_capacity_provider.name
     weight            = 1
   }
 }
-*/
+
 # Outputs
 output "ecr_repository_url" {
   value = aws_ecr_repository.filebrowser.repository_url
@@ -451,4 +483,17 @@ output "s3_bucket_name" {
 
 output "filebrowser_public_ip" {
   value = "After deployment, check the ECS service tasks in the AWS Console for the public IP."
+}
+
+# Update the outputs to include ASG name and capacity provider
+output "autoscaling_group_name" {
+  value = aws_autoscaling_group.ecs.name
+}
+
+output "capacity_provider_name" {
+  value = aws_ecs_capacity_provider.ec2_capacity_provider.name
+}
+
+output "filebrowser_public_ip" {
+  value = "After deployment, check the EC2 instances in the AWS Console for the public IP address of the instance launched by the Auto Scaling Group."
 }
