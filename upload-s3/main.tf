@@ -104,6 +104,15 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
           value = "s3://:@us-east-1/${aws_s3_bucket.filebrowser_storage.bucket}"
         }
       ]
+      "privileged": true,
+      "linuxParameters": {
+          "devices": [
+              {
+                  "hostPath": "/dev/fuse",
+                  "containerPath": "/dev/fuse"
+              }
+          ]
+      }
       logConfiguration = {
         logDriver = "awslogs"
         options = {
