@@ -81,10 +81,10 @@ resource "aws_cloudwatch_log_group" "filebrowser_logs" {
 resource "aws_ecs_task_definition" "filebrowser_task" {
   family                   = "filebrowser-task"
   network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = "256" # 0.25 vCPU
-  memory                   = "512" # 512 MB
-  task_role_arn = aws_iam_role.ecs_execution_role.arn  # Add this line
+  requires_compatibilities = ["EC2"]
+  cpu                      = "256" # Adjust as needed for EC2
+  memory                   = "512" # Adjust as needed for EC2
+  task_role_arn            = aws_iam_role.ecs_execution_role.arn
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
 
   container_definitions = jsonencode([
@@ -100,7 +100,7 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
       ]
       environment = [
         {
-          name  = "FB_STORAGE",
+          name  = "FB_STORAGE"
           value = "s3://:@us-east-1/${aws_s3_bucket.filebrowser_storage.bucket}"
         }
       ]
@@ -123,8 +123,6 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
       }
     }
   ])
-
-  # depends_on = [null_resource.push_filebrowser_image]
 }
 
 # IAM Role for ECS Task Execution
@@ -198,7 +196,7 @@ resource "aws_ecs_service" "filebrowser_service" {
   cluster         = aws_ecs_cluster.filebrowser_cluster.id
   task_definition = aws_ecs_task_definition.filebrowser_task.arn
   desired_count   = 1
-  launch_type     = "FARGATE"
+  launch_type     = "EC2"
 
   network_configuration {
     subnets          = [aws_subnet.public.id]
