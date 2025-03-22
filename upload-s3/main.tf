@@ -80,40 +80,63 @@ resource "aws_cloudwatch_log_group" "filebrowser_logs" {
 # ECS Task Definition for Filebrowser
 resource "aws_ecs_task_definition" "filebrowser_task" {
   family                   = "filebrowser-task"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
+  network_mode             = "bridge"
+  requires_compatibilities = ["EC2"]
   cpu                      = "256" # 0.25 vCPU
   memory                   = "512" # 512 MB
   task_role_arn = aws_iam_role.ecs_execution_role.arn  # Add this line
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
 
   container_definitions = jsonencode([
-    {
-      name  = "filebrowser"
-      image = "${aws_ecr_repository.filebrowser.repository_url}:latest"
-      essential = true
-      portMappings = [
+  {
+    name      = "filebrowser"
+    image     = "${aws_ecr_repository.filebrowser.repository_url}:latest"
+    essential = true
+    portMappings = [
+      {
+        containerPort = 8080
+        hostPort      = 8080
+      }
+    ]
+    environment = [
+      {
+        name  = "S3_BUCKET"
+        value = aws_s3_bucket.filebrowser_storage.bucket
+      },
+      {
+        name  = "S3_REGION"
+        value = "us-east-1"
+      }
+    ]
+    linuxParameters = {
+      capabilities = {
+        add = ["SYS_ADMIN"]
+      }
+      devices = [
         {
-          containerPort = 8080
-          hostPort      = 8080
+          hostPath      = "/dev/fuse"
+          containerPath = "/dev/fuse"
+          permissions   = ["read", "write", "mknod"]
         }
       ]
-      environment = [
-        {
-          name  = "FB_STORAGE",
-          value = "s3://:@us-east-1/${aws_s3_bucket.filebrowser_storage.bucket}"
-        }
-      ]
-      logConfiguration = {
-        logDriver = "awslogs"
-        options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.filebrowser_logs.name
-          "awslogs-region"        = "us-east-1"
-          "awslogs-stream-prefix" = "filebrowser"
-        }
+    }
+    mountPoints = [
+      {
+        sourceVolume  = "filebrowser-config"
+        containerPath = "/config"
+        readOnly      = false
+      }
+    ]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.filebrowser_logs.name
+        "awslogs-region"        = "us-east-1"
+        "awslogs-stream-prefix" = "filebrowser"
       }
     }
-  ])
+  }
+])
 
   # depends_on = [null_resource.push_filebrowser_image]
 }
