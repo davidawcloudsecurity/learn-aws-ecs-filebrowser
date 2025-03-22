@@ -80,7 +80,7 @@ resource "aws_cloudwatch_log_group" "filebrowser_logs" {
 # ECS Task Definition for Filebrowser
 resource "aws_ecs_task_definition" "filebrowser_task" {
   family                   = "filebrowser-task"
-  network_mode             = "bridge"
+  network_mode             = "awsvpc"
   requires_compatibilities = ["EC2"]
   cpu                      = "256" # 0.25 vCPU
   memory                   = "512" # 512 MB
@@ -89,11 +89,6 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
 
   volume {
     name = "filebrowser-config"
-    
-    # Optional: Use EFS for persistent storage
-    # efs_volume_configuration {
-    #   file_system_id = aws_efs_file_system.filebrowser_config.id
-    # }
   }
 
   container_definitions = jsonencode([
