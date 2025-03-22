@@ -141,8 +141,7 @@ resource "aws_iam_policy" "ecs_container_instance_policy" {
           "ecs:SubmitAttachmentStateChange",
           "ecs:SubmitContainerStateChange",
           "ecs:SubmitTaskStateChange",
-          # Optional: Include "ecs:CreateCluster" only if needed
-          # "ecs:CreateCluster"
+          "ecs:CreateCluster"
         ],
         Resource = [
           "*",  # Broad permissions (adjust if needed)
