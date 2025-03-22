@@ -430,7 +430,7 @@ resource "aws_autoscaling_attachment" "ecs" {
 }
 
 resource "aws_ecs_cluster_capacity_providers" "filebrowser_cluster" {
-  cluster_name = aws_ecs_cluster.filebrowser_cluster.id
+  cluster_name = aws_ecs_cluster.filebrowser_cluster.name
 
   capacity_providers = ["FARGATE", "FARGATE_SPOT", "EC2"]
 
