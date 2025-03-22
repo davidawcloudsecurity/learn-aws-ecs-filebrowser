@@ -87,6 +87,15 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
   task_role_arn = aws_iam_role.ecs_execution_role.arn  # Add this line
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
 
+  volume {
+    name = "filebrowser-config"
+    
+    # Optional: Use EFS for persistent storage
+    # efs_volume_configuration {
+    #   file_system_id = aws_efs_file_system.filebrowser_config.id
+    # }
+  }
+
   container_definitions = jsonencode([
   {
     name      = "filebrowser"
