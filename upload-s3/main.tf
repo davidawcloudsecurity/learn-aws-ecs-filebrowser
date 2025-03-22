@@ -493,7 +493,3 @@ output "autoscaling_group_name" {
 output "capacity_provider_name" {
   value = aws_ecs_capacity_provider.ec2_capacity_provider.name
 }
-
-output "filebrowser_public_ip" {
-  value = "After deployment, check the EC2 instances in the AWS Console for the public IP address of the instance launched by the Auto Scaling Group."
-}
