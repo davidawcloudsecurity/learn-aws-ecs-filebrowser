@@ -122,6 +122,12 @@ resource "aws_iam_role_policy_attachment" "ssm_policy_attachment" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+# Add to aws_iam_role_policy_attachment:
+resource "aws_iam_role_policy_attachment" "ecs_ec2_role" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+}
+
 # Create instance profile
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
   name = "ec2_instance_profile"
@@ -400,7 +406,8 @@ resource "aws_launch_template" "ecs" {
   # Add ECS configuration
   user_data = base64encode(<<-EOF
     #!/bin/bash
-    echo ECS_CLUSTER=${aws_ecs_cluster.filebrowser_cluster.name} >> /etc/ecs/ecs.config
+    echo "ECS_CLUSTER=${aws_ecs_cluster.filebrowser_cluster.name}" >> /etc/ecs/ecs.config
+    echo "ECS_ENGINE_AUTH_TYPE=dockercfg" >> /etc/ecs/ecs.config
     EOF
   )
 
@@ -432,9 +439,10 @@ resource "aws_autoscaling_group" "ecs" {
     propagate_at_launch = true
   }
   
+  # Required for ECS capacity providers
   tag {
     key                 = "AmazonECSManaged"
-    value               = ""
+    value               = "true"
     propagate_at_launch = true
   }
 
