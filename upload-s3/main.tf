@@ -216,29 +216,64 @@ resource "null_resource" "push_filebrowser_image" {
       mkdir -p /home/filebrowser-build
       cd /home/filebrowser-build
       
-      # Create Filebrowser config file for S3
-      cat > filebrowser.json << 'EOF'
-{
-  "port": 8080,
-  "baseURL": "",
-  "address": "",
-  "log": "stdout",
-  "name": "FB_STORAGE",
-  "value": "s3://${aws_s3_bucket.filebrowser_storage.bucket}"
-}
-EOF
-      
       # Create Dockerfile with S3 config
       cat > Dockerfile << 'EOF'
 FROM filebrowser/filebrowser:latest
-COPY filebrowser.json /.filebrowser.json
-ENTRYPOINT ["/filebrowser", "--address", "0.0.0.0"]
+
+USER root
+
+# Install required packages for S3 support
+RUN apk add --no-cache \
+    s3fs-fuse \
+    fuse \
+    ca-certificates \
+    bash
+
+# Create the mount directory
+RUN mkdir -p /srv/s3bucket
+
+# Set S3 bucket name
+ENV S3_BUCKET=${aws_s3_bucket.filebrowser_storage.bucket}
+
+# Create entrypoint script
+RUN cat > /entrypoint.sh << 'SCRIPT'
+#!/bin/bash
+set -e
+
+# Mount S3 bucket directly without condition
+echo "Mounting S3 bucket: $S3_BUCKET"
+
+# Additional S3 options if needed
+S3_OPTIONS=${S3_OPTIONS:-""}
+
+# Mount the S3 bucket using IAM role from the task
+s3fs "$S3_BUCKET" /srv/s3bucket \
+    -o iam_role=auto \
+    -o allow_other \
+    -o umask=0022 \
+    -o dbglevel=info \
+    $S3_OPTIONS
+    
+echo "S3 bucket mounted at /srv/s3bucket using IAM role"
+
+# Set S3 bucket as root for filebrowser
+export FB_ROOT=/srv/s3bucket
+
+# Run the original filebrowser executable
+exec /filebrowser
+SCRIPT
+
+# Make the entrypoint script executable
+RUN chmod +x /entrypoint.sh
+
+# Set the entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
 EOF
       
       # Authenticate Docker to ECR
       while true; do
         aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.filebrowser.repository_url}
-        if [ $? -eq 0 ]; then
+        if [ $? -eq 0]; then
           echo "Docker login successful"
           break
         else
