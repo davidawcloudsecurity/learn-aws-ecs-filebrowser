@@ -394,7 +394,7 @@ resource "aws_autoscaling_group" "ecs" {
   min_size         = 1
   max_size         = 2
   desired_capacity = 1
-
+/*
   tags = [
     {
       key                 = "Name"
@@ -402,7 +402,7 @@ resource "aws_autoscaling_group" "ecs" {
       propagate_at_launch = true
     }
   ]
-
+*/
   lifecycle {
     create_before_destroy = true
   }
