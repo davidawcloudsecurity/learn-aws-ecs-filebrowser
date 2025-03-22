@@ -422,18 +422,18 @@ resource "aws_autoscaling_group" "ecs" {
   max_size         = 2
   desired_capacity = 1
 
-  tags = [
-    {
-      key                 = "Name"
-      value               = "ecs-instance"
-      propagate_at_launch = true
-    },
-    {
-      key                 = "AmazonECSManaged"
-      value               = ""
-      propagate_at_launch = true
-    }
-  ]
+  # The correct tag blocks syntax for aws_autoscaling_group
+  tag {
+    key                 = "Name"
+    value               = "ecs-instance"
+    propagate_at_launch = true
+  }
+  
+  tag {
+    key                 = "AmazonECSManaged"
+    value               = ""
+    propagate_at_launch = true
+  }
 
   lifecycle {
     create_before_destroy = true
