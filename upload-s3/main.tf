@@ -243,8 +243,7 @@ set -e
 # Mount S3 bucket directly without condition
 echo "Mounting S3 bucket: $S3_BUCKET"
 
-# Additional S3 options if needed
-S3_OPTIONS=${S3_OPTIONS:-""}
+S3_OPTIONS="${S3_OPTIONS:-""}"
 
 # Mount the S3 bucket using IAM role from the task
 s3fs "$S3_BUCKET" /srv/s3bucket \
