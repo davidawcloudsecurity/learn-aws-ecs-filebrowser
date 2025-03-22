@@ -378,7 +378,7 @@ resource "aws_lb_target_group" "ecs_target_group" {
 resource "aws_launch_template" "ecs" {
   name = "ecs-launch-template"
 
-  image_id      = "ami-0c55b159cbfafe1f0" # Amazon ECS-optimized AMI ID (update with the latest ECS-optimized AMI)
+  image_id      = "ami-084568db4383264d4"
   instance_type = "t3.micro"
   /*
   iam_instance_profile {
