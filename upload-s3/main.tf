@@ -410,7 +410,7 @@ resource "aws_autoscaling_group" "ecs" {
 
 resource "aws_autoscaling_attachment" "ecs" {
   autoscaling_group_name = aws_autoscaling_group.ecs.name
-  alb_target_group_arn   = aws_lb_target_group.ecs_target_group.arn
+  lb_target_group_arn   = aws_lb_target_group.ecs_target_group.arn
 }
 
 resource "aws_ecs_cluster_capacity_providers" "filebrowser_cluster" {
