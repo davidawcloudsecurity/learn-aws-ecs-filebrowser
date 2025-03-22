@@ -398,7 +398,7 @@ resource "aws_launch_template" "ecs" {
     }
   }
 }
-
+/*
 resource "aws_autoscaling_group" "ecs" {
   launch_template {
     id      = aws_launch_template.ecs.id
@@ -410,7 +410,7 @@ resource "aws_autoscaling_group" "ecs" {
   min_size         = 1
   max_size         = 2
   desired_capacity = 1
-/*
+
   tags = [
     {
       key                 = "Name"
@@ -418,7 +418,7 @@ resource "aws_autoscaling_group" "ecs" {
       propagate_at_launch = true
     }
   ]
-*/
+
   lifecycle {
     create_before_destroy = true
   }
@@ -428,7 +428,7 @@ resource "aws_autoscaling_attachment" "ecs" {
   autoscaling_group_name = aws_autoscaling_group.ecs.name
   lb_target_group_arn   = aws_lb_target_group.ecs_target_group.arn
 }
-/*
+
 resource "aws_ecs_cluster_capacity_providers" "filebrowser_cluster" {
   cluster_name = aws_ecs_cluster.filebrowser_cluster.name
 
