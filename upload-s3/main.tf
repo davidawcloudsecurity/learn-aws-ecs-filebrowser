@@ -66,6 +66,66 @@ resource "aws_ecr_repository" "filebrowser" {
   force_delete = true  # This will allow deletion even when the repository contains images
 }
 
+# IAM Role for EC2
+resource "aws_iam_role" "ec2_role" {
+  name = "ec2_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+# IAM Policy for EC2 Role
+resource "aws_iam_policy" "ec2_policy" {
+  name = "ec2_policy"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:DeleteObject",
+          "s3:PutObjectAcl"
+        ]
+        Resource = [
+          "${aws_s3_bucket.filebrowser_storage.arn}",
+          "${aws_s3_bucket.filebrowser_storage.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+# Attach the policies to the role
+resource "aws_iam_role_policy_attachment" "ec2_policy_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.ec2_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_policy_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# Create instance profile
+resource "aws_iam_instance_profile" "ec2_instance_profile" {
+  name = "ec2_instance_profile"
+  role = aws_iam_role.ec2_role.name
+}
+
 # ECS Cluster
 resource "aws_ecs_cluster" "filebrowser_cluster" {
   name = "filebrowser-cluster"
@@ -305,7 +365,9 @@ resource "aws_launch_template" "ecs" {
   image_id      = "ami-0c55b159cbfafe1f0" # Amazon ECS-optimized AMI ID (update with the latest ECS-optimized AMI)
   instance_type = "t3.micro"
   
-  key_name = "your-key-pair" # Provide your key pair name
+  iam_instance_profile {
+    name = aws_iam_instance_profile.ec2_instance_profile.name
+  }
 
   network_interfaces {
     associate_public_ip_address = true
