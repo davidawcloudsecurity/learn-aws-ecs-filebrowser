@@ -26,7 +26,7 @@ apt install s3fs
 curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash
 s3fs
 filebrowser version
-cd /home/ssm-user
+mkdir -p /srv/s3bucket
 ```
 https://filebrowser.org/installation
 ```
