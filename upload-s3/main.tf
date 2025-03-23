@@ -248,7 +248,7 @@ resource "aws_iam_role_policy" "ecs_s3_access" {
 # ECS Task Definition for Filebrowser
 resource "aws_ecs_task_definition" "filebrowser_task" {
   family                   = "filebrowser-task"       # Name for task definition family
-  network_mode             = "awsvpc"                 # Required for EC2 with proper networking
+  network_mode             = "bridge"                 # Required for EC2 with proper networking
   requires_compatibilities = ["EC2"]                  # Run on EC2 instances, not Fargate
   cpu                      = "256"                    # CPU units allocation
   memory                   = "512"                    # Memory allocation in MB
