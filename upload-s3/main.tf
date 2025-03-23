@@ -336,7 +336,7 @@ resource "aws_ecs_service" "filebrowser_service" {
     subnets          = [aws_subnet.public.id]
     security_groups  = [aws_security_group.filebrowser_sg.id]
     # Note: assign_public_ip is missing but needed for public subnets
-    # Add: assign_public_ip = true
+    Add: assign_public_ip = true
   }
 
   depends_on = [aws_ecs_task_definition.filebrowser_task]
