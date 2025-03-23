@@ -375,8 +375,22 @@ EOF
       # Create Dockerfile with S3 config
       cat > Dockerfile << 'EOF'
 FROM filebrowser/filebrowser:latest
-COPY filebrowser.json /.filebrowser.json
-ENTRYPOINT ["/filebrowser", "--address", "0.0.0.0"]
+
+USER root
+
+RUN apk add --no-cache s3fs-fuse fuse ca-certificates bash
+RUN mkdir -p /srv/s3bucket
+
+RUN echo '#!/bin/bash' > /entrypoint.sh && \
+    echo 'set -e' >> /entrypoint.sh && \
+    echo 'echo "Mounting S3 bucket: ${aws_s3_bucket.filebrowser_storage.bucket}"' >> /entrypoint.sh && \
+    echo 's3fs ${aws_s3_bucket.filebrowser_storage.bucket} /srv/s3bucket -o iam_role=auto -o allow_other -o umask=0022 -o dbglevel=info' >> /entrypoint.sh && \
+    echo 'echo "S3 bucket mounted at /srv/s3bucket using IAM role"' >> /entrypoint.sh && \
+    echo 'export FB_ROOT=/srv/s3bucket' >> /entrypoint.sh && \
+    echo 'exec /filebrowser' >> /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 EOF
       
       # Authenticate Docker to ECR (with retry logic)
