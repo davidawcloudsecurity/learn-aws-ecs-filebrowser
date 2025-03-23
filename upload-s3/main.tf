@@ -528,7 +528,7 @@ resource "aws_ecs_capacity_provider" "ec2_capacity_provider" {
 
 resource "aws_ecs_cluster_capacity_providers" "filebrowser_cluster" {
   cluster_name = aws_ecs_cluster.filebrowser_cluster.name
-  capacity_providers = [aws_ecs_cluster_capacity_providers]
+  capacity_providers = [aws_ecs_capacity_provider.ec2_capacity_provider.name]
 }
 
 # Outputs
