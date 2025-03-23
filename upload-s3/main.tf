@@ -264,7 +264,7 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
       portMappings = [
         {
           containerPort = 80  # Port the container listens on
-          hostPort      = 80  # Port exposed on the host
+          hostPort      = 8080  # Port exposed on the host
         }
       ]
       environment = [
@@ -301,6 +301,14 @@ resource "aws_security_group" "filebrowser_sg" {
   vpc_id = aws_vpc.main.id
   name   = "filebrowser-sg"
   
+  # Allow incoming traffic on port 8080
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Allow access from anywhere (not secure for production)
+  }
+
   # Allow incoming traffic on port 8080
   ingress {
     from_port   = 80
