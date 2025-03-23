@@ -263,8 +263,8 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
       essential = true
       portMappings = [
         {
-          containerPort = 8080  # Port the container listens on
-          hostPort      = 8080  # Port exposed on the host
+          containerPort = 80  # Port the container listens on
+          hostPort      = 80  # Port exposed on the host
         }
       ]
       environment = [
@@ -303,8 +303,8 @@ resource "aws_security_group" "filebrowser_sg" {
   
   # Allow incoming traffic on port 8080
   ingress {
-    from_port   = 8080
-    to_port     = 8080
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]  # Allow access from anywhere (not secure for production)
   }
@@ -363,7 +363,7 @@ resource "null_resource" "push_filebrowser_image" {
       # Create Filebrowser config file for S3
       cat > filebrowser.json << 'EOF'
 {
-  "port": 8080,
+  "port": 80,
   "baseURL": "",
   "address": "",
   "log": "stdout",
