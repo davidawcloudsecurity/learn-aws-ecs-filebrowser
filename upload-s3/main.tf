@@ -524,6 +524,7 @@ resource "aws_ecs_capacity_provider" "ec2_capacity_provider" {
       target_capacity           = 100
     }
   }
+  depends_on = [aws_ecs_cluster.filebrowser_cluster]
 }
 
 resource "aws_ecs_cluster_capacity_providers" "filebrowser_cluster" {
