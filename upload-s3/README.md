@@ -1,4 +1,11 @@
 ### How to install Filebrowser
+```
+#!/bin/bash
+sudo apt update -y
+sudo apt install s3fs
+curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash
+cd /home/$(whoami)
+```
 https://filebrowser.org/installation
 ```
 curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash
