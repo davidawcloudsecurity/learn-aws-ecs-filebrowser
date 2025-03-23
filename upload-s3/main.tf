@@ -330,7 +330,7 @@ resource "aws_ecs_service" "filebrowser_service" {
     capacity_provider = aws_ecs_capacity_provider.ec2_capacity_provider.name
     weight            = 1                        # Full weight to this provider
   }
-
+/* Remove because I'm using bridge from ec2
   # Network configuration for awsvpc mode
   network_configuration {
     subnets          = [aws_subnet.public.id]
@@ -338,7 +338,7 @@ resource "aws_ecs_service" "filebrowser_service" {
     # Note: assign_public_ip is required for fargate launch type
     # assign_public_ip = true
   }
-
+*/
   depends_on = [aws_ecs_task_definition.filebrowser_task]
 }
 
