@@ -22,7 +22,7 @@ User data
 ```
 #!/bin/bash
 apt update -y
-apt install s3fs
+apt install s3fs -y
 curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash
 s3fs
 filebrowser version
