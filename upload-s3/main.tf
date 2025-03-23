@@ -303,7 +303,7 @@ resource "aws_ecs_service" "filebrowser_service" {
   
   # Remove launch_type = "EC2" and use capacity_provider_strategy instead
   capacity_provider_strategy {
-    capacity_provider = aws_ecs_capacity_provider.ec2_capacity_provider.name
+    capacity_provider = "EC2"
     weight            = 1
   }
 
@@ -407,6 +407,25 @@ EOF
   }
 }
 
+resource "aws_instance" "ecs_instance" {
+  ami           = "ami-0b0ea68c435eb488d" # Amazon ECS-optimized AMI for us-east-1
+  instance_type = "t2.micro"
+  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
+  subnet_id     = aws_subnet.public.id
+  security_groups = [aws_security_group.filebrowser_sg.id]
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    echo ECS_CLUSTER=${aws_ecs_cluster.filebrowser_cluster.name} >> /etc/ecs/ecs.config
+    echo ECS_ENABLE_CONTAINER_METADATA=true >> /etc/ecs/ecs.config
+    systemctl enable --now ecs.service
+  EOF
+  )
+  tags = {
+    Name = "ECS Instance"
+  }
+}
+
+
 resource "aws_lb_target_group" "ecs_target_group" {
   name     = "ecs-target-group"
   port     = 80
@@ -509,13 +528,7 @@ resource "aws_ecs_capacity_provider" "ec2_capacity_provider" {
 
 resource "aws_ecs_cluster_capacity_providers" "filebrowser_cluster" {
   cluster_name = aws_ecs_cluster.filebrowser_cluster.name
-
-  capacity_providers = [aws_ecs_capacity_provider.ec2_capacity_provider.name]
-
-  default_capacity_provider_strategy {
-    capacity_provider = aws_ecs_capacity_provider.ec2_capacity_provider.name
-    weight            = 1
-  }
+  capacity_providers = ["EC2"]
 }
 
 # Outputs
