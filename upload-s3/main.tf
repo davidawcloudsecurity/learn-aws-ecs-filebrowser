@@ -408,7 +408,7 @@ EOF
 }
 
 resource "aws_instance" "ecs_instance" {
-  ami           = "ami-0b0ea68c435eb488d" # Amazon ECS-optimized AMI for us-east-1
+  ami           = "ami-08761437c33573c1c" # Amazon ECS-optimized AMI for us-east-1
   instance_type = "t2.micro"
   iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
   subnet_id     = aws_subnet.public.id
