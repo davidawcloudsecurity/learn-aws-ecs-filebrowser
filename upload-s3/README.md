@@ -24,7 +24,9 @@ User data
 apt update -y
 apt install s3fs
 curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash
-cd /home/$(whoami)
+s3fs
+filebrowser version
+cd /home/ssm-user
 ```
 https://filebrowser.org/installation
 ```
