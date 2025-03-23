@@ -303,7 +303,7 @@ resource "aws_ecs_service" "filebrowser_service" {
   
   # Remove launch_type = "EC2" and use capacity_provider_strategy instead
   capacity_provider_strategy {
-    capacity_provider = "EC2"
+    capacity_provider = aws_ecs_capacity_provider.ec2_capacity_provider.name
     weight            = 1
   }
 
@@ -528,7 +528,7 @@ resource "aws_ecs_capacity_provider" "ec2_capacity_provider" {
 
 resource "aws_ecs_cluster_capacity_providers" "filebrowser_cluster" {
   cluster_name = aws_ecs_cluster.filebrowser_cluster.name
-  capacity_providers = ["EC2"]
+  capacity_providers = [aws_ecs_cluster_capacity_providers]
 }
 
 # Outputs
