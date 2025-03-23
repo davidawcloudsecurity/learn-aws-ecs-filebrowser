@@ -12,11 +12,7 @@ curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bas
 ```
 Run this with specific path
 ```
-filebrowser -r /path/to/your/files
-```
-### How to custom port
-```
-/filebrowser --port 80 --address 0.0.0.0
+filebrowser --port 80 --address 0.0.0.0 -r /path/to/your/files
 ```
 ### How to install s3fuse to be used as mount point
 https://github.com/s3fs-fuse/s3fs-fuse
