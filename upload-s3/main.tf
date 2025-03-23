@@ -1,6 +1,10 @@
 # Configure the AWS provider
 provider "aws" {
-  region = "us-east-1" # Change to your preferred region
+  region = var.region
+}
+
+variable region {
+  default = "us-east-1" # Change to your preferred region
 }
 
 # VPC with a single public subnet
@@ -288,7 +292,7 @@ resource "aws_ecs_task_definition" "filebrowser_task" {
         logDriver = "awslogs"
         options = {
           "awslogs-group"         = aws_cloudwatch_log_group.filebrowser_logs.name
-          "awslogs-region"        = "us-east-1"
+          "awslogs-region"        = ${var.region}
           "awslogs-stream-prefix" = "filebrowser"
         }
       }
@@ -527,7 +531,7 @@ resource "aws_autoscaling_group" "ecs" {
   vpc_zone_identifier = [aws_subnet.public.id]  # Subnet to launch in
 
   min_size         = 1    # Minimum instances
-  max_size         = 2    # Maximum instances
+  max_size         = 1    # Maximum instances
   desired_capacity = 1    # Desired number of instances
 
   # Name tag for instances
