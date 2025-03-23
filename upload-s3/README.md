@@ -14,6 +14,11 @@ filebrowser -r /path/to/your/files
 ### How to install s3fuse to be used as mount point
 https://github.com/s3fs-fuse/s3fs-fuse
 ### How to use s3fuse
+Use instance profile
+```
+s3fs my-filebrowser-bucket-caipirjj /srv/s3bucket -o iam_role=auto -o allow_other -o umask=0022 -o dbglevel=info'
+```
+Use access key and secret
 ```
 echo ACCESS_KEY_ID:SECRET_ACCESS_KEY > ${HOME}/.passwd-s3fs
 chmod 600 ${HOME}/.passwd-s3fs
