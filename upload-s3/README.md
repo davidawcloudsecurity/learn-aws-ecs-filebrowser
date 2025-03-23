@@ -41,7 +41,7 @@ https://github.com/s3fs-fuse/s3fs-fuse
 ### How to use s3fuse
 Use instance profile
 ```
-s3fs my-filebrowser-bucket-caipirjj /srv/s3bucket -o iam_role=auto -o allow_other -o umask=0022 -o dbglevel=info'
+s3fs my-filebrowser-bucket-caipirjj /srv/s3bucket -o iam_role=auto -o allow_other -o umask=0022 -o dbglevel=info
 ```
 Use access key and secret
 ```
